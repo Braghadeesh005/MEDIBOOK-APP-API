@@ -27,7 +27,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 
-
+app.get('/', (req,res) => {
+  res.send("MEDIBOOK - APP - SERVER");
+})
 
 app.post('/signup', async (req, res) => {
   try {
