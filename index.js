@@ -41,7 +41,7 @@ app.post('/signup', async (req, res) => {
     }
 
     // Check if the user with the provided phone number already exists
-    const existingUserQuery = 'SELECT * FROM patient WHERE CONTACT_NUMBER = ?';
+    const existingUserQuery = 'SELECT * FROM PATIENT WHERE CONTACT_NUMBER = ?';
     const [existingUserResults] = await db.query(existingUserQuery, [phoneNumber]);
 
     if (existingUserResults.length > 0) {
@@ -73,7 +73,7 @@ app.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Phone number and password are required' });
     }
 
-    const selectQuery = 'SELECT * FROM patient WHERE CONTACT_NUMBER = ?';
+    const selectQuery = 'SELECT * FROM PATIENT WHERE CONTACT_NUMBER = ?';
     const [userResults] = await db.query(selectQuery, [phoneNumber]);
 
     if (userResults.length === 0) {
@@ -108,7 +108,7 @@ app.post('/login', async (req, res) => {
 app.get('/api/hospitals', async(req, res) => {
   try {
     // Using the connection pool to execute queries
-    const [rows] = await db.query('SELECT * FROM hospital');
+    const [rows] = await db.query('SELECT * FROM HOSPITAL');
     res.json(rows);
   } catch (error) {
     console.error('Error fetching hospitals:', error);
@@ -195,7 +195,7 @@ app.get('/api/doctors/:hospitalId', async (req, res) => {
     const hospitalId = req.params.hospitalId;
     const query = `
       SELECT DOCTOR_ID, DOCTOR_NAME
-      FROM doctor
+      FROM DOCTOR
       WHERE HOSPITAL_ID = ${hospitalId}`;
     
     const [results] = await db.query(query);
@@ -212,7 +212,7 @@ app.get('/api/doctor_specialization_mapping/:doctorId', async (req, res) => {
     const doctorId = req.params.doctorId;
     const query = `
       SELECT SPECIALIZATION_ID
-      FROM doctor_specialization_mapping
+      FROM DOCTOR_SPECIALIZATION_MAPPING
       WHERE DOCTOR_ID = ${doctorId}`;
 
     const [results] = await db.query(query);
@@ -230,7 +230,7 @@ app.get('/api/specializations', async (req, res) => {
     const specializationIds = req.query.ids.split(',').map(id => parseInt(id));
     const query = `
       SELECT SPECIALIZATION_ID, SPECIALIZATION_NAME
-      FROM specialization
+      FROM SPECIALIZATION
       WHERE SPECIALIZATION_ID IN (${specializationIds.join(',')})`;
 
     const results = await db.query(query);
@@ -393,7 +393,7 @@ app.post('/book-slot', async (req, res) => {
     const { docSlotId, doctorId, hospitalId } = req.body;
     console.log(hospitalId);
     const phoneNumber = req.user.phoneNumber;
-    const selectPatientIdQuery = 'SELECT PATIENT_ID FROM patient WHERE CONTACT_NUMBER = ?';
+    const selectPatientIdQuery = 'SELECT PATIENT_ID FROM PATIENT WHERE CONTACT_NUMBER = ?';
     const [patientResults] = await db.query(selectPatientIdQuery, [phoneNumber]);
 
     if (patientResults.length === 0) {
@@ -408,7 +408,7 @@ app.post('/book-slot', async (req, res) => {
     // Check if docSlotId exists in the token generator table
     const currentDate = new Date().toISOString().split('T')[0];
     console.log(currentDate);
-const check = `SELECT * FROM appointment WHERE DOC_SLOT_ID = ${docSlotId} AND PATIENT_ID = ${patientId} AND DATE = '${currentDate}'`;
+const check = `SELECT * FROM APPOINTMENT WHERE DOC_SLOT_ID = ${docSlotId} AND PATIENT_ID = ${patientId} AND DATE = '${currentDate}'`;
 
 
     
@@ -425,7 +425,7 @@ const check = `SELECT * FROM appointment WHERE DOC_SLOT_ID = ${docSlotId} AND PA
       return res.status(400).json({ message: 'Slot already booked' });
     }
     
-    const checkQuery = `SELECT * FROM token_generator WHERE DOC_SLOT_ID = ${docSlotId}`;
+    const checkQuery = `SELECT * FROM TOKEN_GENERATOR WHERE DOC_SLOT_ID = ${docSlotId}`;
     try {
       [results] = await db.query(checkQuery);
       console.log(results.length);
@@ -435,7 +435,7 @@ const check = `SELECT * FROM appointment WHERE DOC_SLOT_ID = ${docSlotId} AND PA
     if (results.length > 0) {
       // If docSlotId exists, update the current_token_number
       const updateQuery = `
-        UPDATE token_generator
+        UPDATE TOKEN_GENERATOR
         SET CURRENT_TOKEN_NUMBER = CURRENT_TOKEN_NUMBER + 1
         WHERE DOC_SLOT_ID = ${docSlotId}
       `;
@@ -443,14 +443,14 @@ const check = `SELECT * FROM appointment WHERE DOC_SLOT_ID = ${docSlotId} AND PA
     } else {
       // If docSlotId doesn't exist, insert a new row
       const insertQuery = `
-        INSERT INTO token_generator (DOC_SLOT_ID, DATE, CURRENT_TOKEN_NUMBER)
+        INSERT INTO TOKEN_GENERATOR (DOC_SLOT_ID, DATE, CURRENT_TOKEN_NUMBER)
         VALUES (${docSlotId}, CURRENT_DATE(), 1)
       `;
       await db.query(insertQuery);
     }
     // Get the relevant details from token_generator
     const tokenDetailsQuery = `
-      SELECT * FROM token_generator WHERE DOC_SLOT_ID = ${docSlotId}
+      SELECT * FROM TOKEN_GENERATOR WHERE DOC_SLOT_ID = ${docSlotId}
     `;
     const [tokenDetails] = await db.query(tokenDetailsQuery);
     console.log(tokenDetails);
@@ -460,7 +460,7 @@ const check = `SELECT * FROM appointment WHERE DOC_SLOT_ID = ${docSlotId} AND PA
 
     // Insert into the appointment table
     const insertAppointmentQuery = `
-      INSERT INTO appointment (PATIENT_ID, TOKEN_NUMBER, DOC_SLOT_ID, DATE, HOSPITAL_ID)
+      INSERT INTO APPOINTMENT (PATIENT_ID, TOKEN_NUMBER, DOC_SLOT_ID, DATE, HOSPITAL_ID)
       VALUES (?, ?, ?, ?, ?)
     `;
     console.log(patientId);
@@ -482,7 +482,7 @@ app.get('/api/user-profile', async (req, res) => {
     console.log(phoneNumber+"  ");
     
     // Fetch patient details from the patient table
-    const patientQuery = 'SELECT * FROM patient WHERE CONTACT_NUMBER = ?';
+    const patientQuery = 'SELECT * FROM PATIENT WHERE CONTACT_NUMBER = ?';
     const [patientResults] = await db.query(patientQuery, [phoneNumber]);
     
     if (patientResults.length === 0) {
@@ -493,21 +493,21 @@ app.get('/api/user-profile', async (req, res) => {
     
     // Fetch patient appointments from the appointment table
     const appointmentsQuery = `SELECT
-    appointment.*,
-    hospital.HOSPITAL_NAME,
-    slot.DOCTOR_ID,
-    doctor.DOCTOR_NAME
+    APPOINTMENT.*,
+    HOSPITAL.HOSPITAL_NAME,
+    SLOT.DOCTOR_ID,
+    DOCTOR.DOCTOR_NAME
   FROM
-    appointment
+    APPOINTMENT
   JOIN
-    hospital ON appointment.HOSPITAL_ID = hospital.HOSPITAL_ID
+    HOSPITAL ON APPOINTMENT.HOSPITAL_ID = HOSPITAL.HOSPITAL_ID
   JOIN
-    slot ON appointment.DOC_SLOT_ID = slot.DOC_SLOT_ID
+    SLOT ON APPOINTMENT.DOC_SLOT_ID = SLOT.DOC_SLOT_ID
   JOIN
-    doctor ON slot.DOCTOR_ID = doctor.DOCTOR_ID
+    DOCTOR ON slot.DOCTOR_ID = DOCTOR.DOCTOR_ID
   WHERE
-    appointment.PATIENT_ID = ? AND
-    appointment.APPOINTMENT_STATUS IN ('FINISHED', 'MISSED');  
+    APPOINTMENT.PATIENT_ID = ? AND
+    APPOINTMENT.APPOINTMENT_STATUS IN ('FINISHED', 'MISSED');  
     `;
     const [appointments] = await db.query(appointmentsQuery, [patient.PATIENT_ID]);
     
@@ -526,7 +526,7 @@ app.get('/api/current-status', async (req, res) => {
     console.log(phoneNumber+"  ");
     
     // Fetch patient details from the patient table
-    const patientQuery = 'SELECT * FROM patient WHERE CONTACT_NUMBER = ?';
+    const patientQuery = 'SELECT * FROM PATIENT WHERE CONTACT_NUMBER = ?';
     const [patientResults] = await db.query(patientQuery, [phoneNumber]);
     
     if (patientResults.length === 0) {
@@ -538,23 +538,23 @@ app.get('/api/current-status', async (req, res) => {
     // Fetch patient appointments from the appointment table
     const appointmentsQuery = `
     SELECT
-      appointment.*,
-      hospital.HOSPITAL_NAME,
-      slot.DOCTOR_ID,
-      doctor.DOCTOR_NAME
+      APPOINTMENT.*,
+      HOSPITAL.HOSPITAL_NAME,
+      SLOT.DOCTOR_ID,
+      DOCTOR.DOCTOR_NAME
     FROM
-      appointment
+      APPOINTMENT
     JOIN
-      hospital ON appointment.HOSPITAL_ID = hospital.HOSPITAL_ID
+      HOSPITAL ON APPOINTMENT.HOSPITAL_ID = HOSPITAL.HOSPITAL_ID
     JOIN
-      slot ON appointment.DOC_SLOT_ID = slot.DOC_SLOT_ID
+      SLOT ON APPOINTMENT.DOC_SLOT_ID = SLOT.DOC_SLOT_ID
     JOIN
-      doctor ON slot.DOCTOR_ID = doctor.DOCTOR_ID
+      DOCTOR ON slot.DOCTOR_ID = DOCTOR.DOCTOR_ID
     WHERE
-      appointment.PATIENT_ID = ? AND
-      appointment.APPOINTMENT_STATUS = 'YET_TO_START'
+      APPOINTMENT.PATIENT_ID = ? AND
+      APPOINTMENT.APPOINTMENT_STATUS = 'YET_TO_START'
     ORDER BY
-      appointment.DATE DESC;
+      APPOINTMENT.DATE DESC;
   `;
   
     const [appointments] = await db.query(appointmentsQuery, [patient.PATIENT_ID]);
@@ -576,7 +576,7 @@ app.get('/api/appointments/:appointmentId/details', async (req, res) => {
     const phoneNumber = req.user.phoneNumber; // Assuming the phone number is stored in req.user
 
     // Fetch patient details from the patient table
-    const patientQuery = 'SELECT * FROM patient WHERE CONTACT_NUMBER = ?';
+    const patientQuery = 'SELECT * FROM PATIENT WHERE CONTACT_NUMBER = ?';
     const [patientResults] = await db.query(patientQuery, [phoneNumber]);
 
     if (patientResults.length === 0) {
@@ -587,10 +587,10 @@ app.get('/api/appointments/:appointmentId/details', async (req, res) => {
 
     // Fetch current token for the clicked appointment ID
     const currentTokenQuery = `
-    SELECT slot.CURRENT_TOKEN_NUMBER, slot.STATUS_OF_SLOT, slot.OP_START_TIME, slot.DOC_SLOT_ID
-    FROM appointment
-    JOIN slot ON appointment.DOC_SLOT_ID = slot.DOC_SLOT_ID
-    WHERE appointment.APPOINTMENT_ID = ? AND appointment.PATIENT_ID = ?;
+    SELECT SLOT.CURRENT_TOKEN_NUMBER, SLOT.STATUS_OF_SLOT, SLOT.OP_START_TIME, SLOT.DOC_SLOT_ID
+    FROM APPOINTMENT
+    JOIN SLOT ON APPOINTMENT.DOC_SLOT_ID = SLOT.DOC_SLOT_ID
+    WHERE APPOINTMENT.APPOINTMENT_ID = ? AND APPOINTMENT.PATIENT_ID = ?;
     `;
     const [currentTokenResults] = await db.query(currentTokenQuery, [appointmentId, patient.PATIENT_ID]);
 
