@@ -52,7 +52,7 @@ app.post('/signup', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Insert the new user into the database
-    const insertUserQuery = 'INSERT INTO patient (PATIENT_NAME, CONTACT_NUMBER, PASSWORD) VALUES (?, ?, ?)';
+    const insertUserQuery = 'INSERT INTO PATIENT (PATIENT_NAME, CONTACT_NUMBER, PASSWORD) VALUES (?, ?, ?)';
     await db.query(insertUserQuery, [name, phoneNumber, hashedPassword]);
 
     // Respond with a success message
